@@ -7,6 +7,10 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 
+function isRecord(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' && value !== null;
+}
+
 @Catch()
 export class HttpExceptionFilter<T> implements ExceptionFilter {
   catch(exception: T, host: ArgumentsHost) {
@@ -30,16 +34,21 @@ export class HttpExceptionFilter<T> implements ExceptionFilter {
           409: 'CONFLICT',
           422: 'UNPROCESSABLE',
         };
-        code = codeMap[status] ?? 'ERROR';
 
-        if (
-          exceptionBody &&
-          typeof exceptionBody === 'object' &&
-          'message' in exceptionBody
-        ) {
+        if (isRecord(exceptionBody)) {
+          code =
+            typeof exceptionBody.code === 'string'
+              ? exceptionBody.code
+              : (codeMap[status] ?? 'ERROR');
+
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const msg = exceptionBody.message;
 
-          message = Array.isArray(msg) ? String(msg[0]) : String(msg);
+          message = Array.isArray(msg)
+            ? String(msg[0])
+            : typeof msg === 'string'
+              ? msg
+              : message;
         }
       }
     }

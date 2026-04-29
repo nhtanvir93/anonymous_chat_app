@@ -50,12 +50,12 @@ export class AuthService {
       const oldSessionToken = await this.redis.get(oldUser.id);
 
       if (oldSessionToken) {
-        await this.redis.remove(oldSessionToken);
-        await this.redis.remove(oldUser.id);
+        await this.redis.remove(`session:${oldSessionToken}`);
+        await this.redis.remove(`user:${oldUser.id}`);
       }
 
-      await this.redis.set(sessionToken, oldUser.id, dayToSec);
-      await this.redis.set(oldUser.id, sessionToken, dayToSec);
+      await this.redis.set(`session:${oldSessionToken}`, oldUser.id, dayToSec);
+      await this.redis.set(`user:${oldUser.id}`, sessionToken, dayToSec);
 
       return {
         sessionToken,
@@ -64,8 +64,8 @@ export class AuthService {
     }
 
     const newUser = await this.createDBUser(data);
-    await this.redis.set(sessionToken, newUser.id, dayToSec);
-    await this.redis.set(newUser.id, sessionToken, dayToSec);
+    await this.redis.set(`session:${sessionToken}`, newUser.id, dayToSec);
+    await this.redis.set(`user:${newUser.id}`, sessionToken, dayToSec);
 
     return {
       sessionToken,

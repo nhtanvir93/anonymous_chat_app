@@ -6,6 +6,8 @@ import { ConfigModule } from '@nestjs/config';
 import { DrizzleModule } from './database/drizzle.module';
 import { RedisModule } from './redis/redis.module';
 import { RoomsModule } from './rooms/rooms.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './auth/auth.guard';
 
 @Module({
   imports: [
@@ -18,6 +20,6 @@ import { RoomsModule } from './rooms/rooms.module';
     RoomsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [{ provide: APP_GUARD, useClass: AuthGuard }, AppService],
 })
 export class AppModule {}

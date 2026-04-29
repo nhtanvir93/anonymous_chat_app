@@ -6,10 +6,12 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Req,
 } from '@nestjs/common';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { RoomsService } from './rooms.service';
 import { AppException } from 'src/app-exception/app-exception';
+import type { Request } from 'express';
 
 const ROOM_NOT_FOUND = 'ROOM_NOT_FOUND';
 
@@ -18,8 +20,8 @@ export class RoomsController {
   constructor(private readonly roomService: RoomsService) {}
 
   @Post()
-  async create(@Body() dto: CreateRoomDto) {
-    const room = await this.roomService.createRoom(dto, 'hle');
+  async create(@Body() dto: CreateRoomDto, @Req() request: Request) {
+    const room = await this.roomService.createRoom(dto, request.userId!);
 
     return {
       success: true,
