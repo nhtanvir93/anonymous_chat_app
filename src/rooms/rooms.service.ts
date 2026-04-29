@@ -1,4 +1,9 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  HttpStatus,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { DrizzleQueryError, eq } from 'drizzle-orm';
 import { DRIZZLE_PROVIDER } from '../database/drizzle.module';
 import type { DrizzleDB } from '../database/drizzle.types';
@@ -9,6 +14,7 @@ import { DatabaseError } from 'pg';
 
 const DUPLICATE_NAME_ERROR = '23505';
 const DUPLICATE_NAME_CODE = 'ROOM_NAME_TAKEN';
+const ROOM_NOT_FOUND = 'ROOM_NOT_FOUND';
 
 @Injectable()
 export class RoomsService {
@@ -70,5 +76,28 @@ export class RoomsService {
 
       throw error;
     }
+  }
+
+  async deleteRoom(id: string, createdBy: string) {
+    const room = await this.db
+      .select()
+      .from(rooms)
+      .where(eq(rooms.id, id))
+      .limit(1)
+      .then((res) => res[0] ?? null);
+
+    if (!room) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ROOM_NOT_FOUND,
+        `Room with id ${id} does not exist`,
+      );
+    }
+
+    if (room.createdBy !== createdBy) {
+      throw new ForbiddenException();
+    }
+
+    await this.db.delete(rooms).where(eq(rooms.id, id)).returning();
   }
 }

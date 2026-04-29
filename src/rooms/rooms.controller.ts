@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -60,6 +61,19 @@ export class RoomsController {
       data: {
         rooms,
       },
+    };
+  }
+
+  @Delete(':id')
+  async remove(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: Request,
+  ) {
+    await this.roomService.deleteRoom(id, request.userId!);
+
+    return {
+      success: true,
+      message: 'Room deleted successfully',
     };
   }
 }
