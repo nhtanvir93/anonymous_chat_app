@@ -46,7 +46,7 @@ export class AuthService {
 
     const sessionToken = randomBytes(32).toString('hex');
 
-    if (oldUser !== null) {
+    if (oldUser) {
       const oldSessionToken = await this.redis.get(oldUser.id);
 
       if (oldSessionToken) {
@@ -54,8 +54,9 @@ export class AuthService {
         await this.redis.remove(oldUser.id);
       }
 
-      await this.redis.set(sessionToken, JSON.stringify(oldUser), dayToSec);
+      await this.redis.set(sessionToken, oldUser.id, dayToSec);
       await this.redis.set(oldUser.id, sessionToken, dayToSec);
+
       return {
         sessionToken,
         user: oldUser,
@@ -63,8 +64,9 @@ export class AuthService {
     }
 
     const newUser = await this.createDBUser(data);
-    await this.redis.set(sessionToken, JSON.stringify(newUser), dayToSec);
+    await this.redis.set(sessionToken, newUser.id, dayToSec);
     await this.redis.set(newUser.id, sessionToken, dayToSec);
+
     return {
       sessionToken,
       user: newUser,
