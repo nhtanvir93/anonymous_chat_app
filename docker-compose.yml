@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:${POSTGRES_PORT:-5432}"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-anonymous_chat}
+
+  redis:
+    image: redis:7
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:${REDIS_PORT:-6379}"
+
+  app:
+    build: .
+    container_name: anonymous_chat
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    command: pnpm start:dev
+    volumes:
+      - .:/app
+      - /app/node_modules
