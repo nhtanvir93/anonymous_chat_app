@@ -1,5 +1,4 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
 import { MessagesService } from './messages.service';
 import { GetMessagesDto } from './dto/get-messages.dto';
 
@@ -10,10 +9,8 @@ export class MessagesController {
   @Get()
   async getMessages(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Query() query: unknown,
+    @Query() dto: GetMessagesDto,
   ) {
-    const dto = plainToInstance(GetMessagesDto, query);
-
     const result = await this.messagesService.getMessages(id, dto);
 
     return {
