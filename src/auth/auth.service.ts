@@ -4,27 +4,29 @@ import { DRIZZLE_PROVIDER } from '../database/drizzle.module';
 import type { DrizzleDB } from '../database/drizzle.types';
 import { users } from '../database/schema';
 import { LoginDto } from './dto/login.dto';
+import { RedisService } from 'src/redis/redis.service';
+import { randomBytes } from 'crypto';
 
 type User = typeof users.$inferSelect;
 
 @Injectable()
 export class AuthService {
-  constructor(@Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
+    private readonly redis: RedisService,
+  ) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   async findUserByUsername(username: string): Promise<User | null> {
     const result: User[] = await this.db
       .select()
       .from(users)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .where(eq(users.username, username))
       .limit(1);
 
     return result[0] ?? null;
   }
 
-  async createUser(data: LoginDto): Promise<User> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  async createDBUser(data: LoginDto) {
     const [newUser] = await this.db
       .insert(users)
       .values({
@@ -33,5 +35,39 @@ export class AuthService {
       .returning();
 
     return newUser;
+  }
+
+  async createUser(data: LoginDto): Promise<{
+    sessionToken: string;
+    user: User;
+  }> {
+    const oldUser = await this.findUserByUsername(data.username);
+    const dayToSec = 24 * 60 * 60;
+
+    const sessionToken = randomBytes(32).toString('hex');
+
+    if (oldUser !== null) {
+      const oldSessionToken = await this.redis.get(oldUser.id);
+
+      if (oldSessionToken) {
+        await this.redis.remove(oldSessionToken);
+        await this.redis.remove(oldUser.id);
+      }
+
+      await this.redis.set(sessionToken, JSON.stringify(oldUser), dayToSec);
+      await this.redis.set(oldUser.id, sessionToken, dayToSec);
+      return {
+        sessionToken,
+        user: oldUser,
+      };
+    }
+
+    const newUser = await this.createDBUser(data);
+    await this.redis.set(sessionToken, JSON.stringify(newUser), dayToSec);
+    await this.redis.set(newUser.id, sessionToken, dayToSec);
+    return {
+      sessionToken,
+      user: newUser,
+    };
   }
 }
