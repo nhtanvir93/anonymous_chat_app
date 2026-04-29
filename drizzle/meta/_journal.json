@@ -15,6 +15,13 @@
       "when": 1777485003208,
       "tag": "0001_woozy_vivisector",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777497351423,
+      "tag": "0002_large_mockingbird",
+      "breakpoints": true
     }
   ]
 }

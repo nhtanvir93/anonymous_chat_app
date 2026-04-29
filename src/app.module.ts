@@ -8,6 +8,8 @@ import { RedisModule } from './redis/redis.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/auth.guard';
+import { MessagesService } from './messages/messages.service';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -18,8 +20,13 @@ import { AuthGuard } from './auth/auth.guard';
     RedisModule,
     AuthModule,
     RoomsModule,
+    MessagesModule,
   ],
   controllers: [AppController],
-  providers: [{ provide: APP_GUARD, useClass: AuthGuard }, AppService],
+  providers: [
+    { provide: APP_GUARD, useClass: AuthGuard },
+    AppService,
+    MessagesService,
+  ],
 })
 export class AppModule {}
