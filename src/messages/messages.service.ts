@@ -5,6 +5,7 @@ import type { DrizzleDB } from '../database/drizzle.types';
 import { messages, rooms, users } from '../database/schema';
 import { AppException } from 'src/app-exception/app-exception';
 import { GetMessagesDto } from './dto/get-messages.dto';
+import { CreateMessageDto } from './dto/create-message.dto';
 
 const ROOM_NOT_FOUND = 'ROOM_NOT_FOUND';
 const MESSAGE_NOT_FOUND = 'MESSAGE_NOT_FOUND';
@@ -82,5 +83,47 @@ export class MessagesService {
       hasMore,
       nextCursor: hasMore ? items[0].id : null,
     };
+  }
+
+  async createMessage(roomId: string, userId: string, data: CreateMessageDto) {
+    const room = await this.db
+      .select({ id: rooms.id })
+      .from(rooms)
+      .where(eq(rooms.id, roomId))
+      .limit(1)
+      .then((res) => res[0] ?? null);
+
+    if (!room) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ROOM_NOT_FOUND,
+        `Room with id ${roomId} does not exist`,
+      );
+    }
+
+    const [inserted] = await this.db
+      .insert(messages)
+      .values({
+        roomId,
+        message: data.content,
+        createdBy: userId,
+      })
+      .returning({ id: messages.id });
+
+    const message = await this.db
+      .select({
+        id: messages.id,
+        message: messages.message,
+        createdAt: messages.createdAt,
+        username: users.username,
+        createdById: messages.createdBy,
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.createdBy, users.id))
+      .where(eq(messages.id, inserted.id))
+      .limit(1)
+      .then((res) => res[0]);
+
+    return message;
   }
 }
