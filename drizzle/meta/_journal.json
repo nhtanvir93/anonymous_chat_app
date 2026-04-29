@@ -8,6 +8,13 @@
       "when": 1777469919612,
       "tag": "0000_add_users_table",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777485003208,
+      "tag": "0001_woozy_vivisector",
+      "breakpoints": true
     }
   ]
 }
