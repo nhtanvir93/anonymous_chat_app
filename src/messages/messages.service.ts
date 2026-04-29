@@ -38,7 +38,6 @@ export class MessagesService {
       const cursorMessage = await this.db
         .select({ createdAt: messages.createdAt })
         .from(messages)
-
         .where(eq(messages.id, before))
         .limit(1)
         .then((res) => res[0] ?? null);
@@ -51,6 +50,8 @@ export class MessagesService {
         );
       }
 
+      console.log(`Cursor : ${cursorMessage.createdAt.toString()}`);
+
       cursorCondition = lt(messages.createdAt, cursorMessage.createdAt);
     }
 
@@ -61,10 +62,10 @@ export class MessagesService {
     const rows = await this.db
       .select({
         id: messages.id,
-        message: messages.message,
+        content: messages.message,
         createdAt: messages.createdAt,
         username: users.username,
-        createdById: messages.createdBy,
+        roomId: messages.roomId,
       })
       .from(messages)
       .leftJoin(users, eq(messages.createdBy, users.id))
@@ -113,10 +114,10 @@ export class MessagesService {
     const message = await this.db
       .select({
         id: messages.id,
-        message: messages.message,
+        content: messages.message,
         createdAt: messages.createdAt,
         username: users.username,
-        createdById: messages.createdBy,
+        roomId: messages.roomId,
       })
       .from(messages)
       .leftJoin(users, eq(messages.createdBy, users.id))
