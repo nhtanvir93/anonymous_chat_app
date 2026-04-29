@@ -13,8 +13,8 @@ export const DRIZZLE_PROVIDER = 'DRIZZLE_PROVIDER';
       provide: DRIZZLE_PROVIDER,
       useFactory: (): DrizzleDB => {
         const {
-          POSTGRES_HOST, // postgres (container name)
-          POSTGRES_PORT, // 5432 (internal container port)
+          POSTGRES_HOST,
+          POSTGRES_PORT,
           POSTGRES_USER,
           POSTGRES_PASSWORD,
           POSTGRES_DB,
