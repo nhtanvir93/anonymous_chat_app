@@ -73,7 +73,7 @@ export class RoomsController {
 
     return {
       success: true,
-      message: 'Room deleted successfully',
+      data: { deleted: true },
     };
   }
 }
