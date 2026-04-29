@@ -50,4 +50,16 @@ export class RoomsController {
       },
     };
   }
+
+  @Get('')
+  async findAll() {
+    const rooms = await this.roomService.findAllRooms();
+
+    return {
+      success: true,
+      data: {
+        rooms,
+      },
+    };
+  }
 }

@@ -14,6 +14,20 @@ const DUPLICATE_NAME_CODE = 'ROOM_NAME_TAKEN';
 export class RoomsService {
   constructor(@Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB) {}
 
+  async findAllRooms() {
+    const result = await this.db
+      .select({
+        id: rooms.id,
+        name: rooms.name,
+        createdBy: users.username,
+        createdAt: rooms.createdAt,
+      })
+      .from(rooms)
+      .leftJoin(users, eq(rooms.createdBy, users.id));
+
+    return result;
+  }
+
   async findRoomById(id: string) {
     const result = await this.db
       .select({
