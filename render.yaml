@@ -49,4 +49,4 @@ services:
 databases:
   - name: anonymous-chat-db
     databaseName: anonymous_chat
-    user: postgres
+    user: anon_chat_user
