@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from 'src/decorators/public.decorator';
+import { redisKeys } from 'src/redis/redis.keys';
 import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
@@ -38,7 +39,7 @@ export class AuthGuard implements CanActivate {
 
     const token = authHeader.slice(7);
 
-    const userId = await this.redis.get(`session:${token}`);
+    const userId = await this.redis.get(redisKeys.session(token));
 
     if (!userId) {
       throw new UnauthorizedException('Missing or expired session token');
