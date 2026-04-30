@@ -13,4 +13,4 @@ ENV PORT=$PORT
 
 EXPOSE $PORT
 
-CMD ["pnpm", "start:dev"]
+CMD ["pnpm", "start:prod"]
