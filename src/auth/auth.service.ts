@@ -6,6 +6,7 @@ import { users } from '../database/schema';
 import { LoginDto } from './dto/login.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { randomBytes } from 'crypto';
+import { redisKeys } from 'src/redis/redis.keys';
 
 type User = typeof users.$inferSelect;
 
@@ -37,39 +38,29 @@ export class AuthService {
     return newUser;
   }
 
-  async createUser(data: LoginDto): Promise<{
-    sessionToken: string;
-    user: User;
-  }> {
-    const oldUser = await this.findUserByUsername(data.username);
-    const dayToSec = 24 * 60 * 60;
+  async createUser(
+    data: LoginDto,
+  ): Promise<{ sessionToken: string; user: User }> {
+    const DAY_IN_SEC = 24 * 60 * 60;
 
-    const sessionToken = randomBytes(32).toString('hex');
+    const user =
+      (await this.findUserByUsername(data.username)) ??
+      (await this.createDBUser(data));
 
-    if (oldUser) {
-      const oldSessionToken = await this.redis.get(oldUser.id);
-
-      if (oldSessionToken) {
-        await this.redis.remove(`session:${oldSessionToken}`);
-        await this.redis.remove(`user:${oldUser.id}`);
-      }
-
-      await this.redis.set(`session:${oldSessionToken}`, oldUser.id, dayToSec);
-      await this.redis.set(`user:${oldUser.id}`, sessionToken, dayToSec);
-
-      return {
-        sessionToken,
-        user: oldUser,
-      };
+    const existingToken = await this.redis.get(redisKeys.user(user.id));
+    if (existingToken) {
+      await Promise.all([
+        this.redis.remove(redisKeys.session(existingToken)),
+        this.redis.remove(redisKeys.user(user.id)),
+      ]);
     }
 
-    const newUser = await this.createDBUser(data);
-    await this.redis.set(`session:${sessionToken}`, newUser.id, dayToSec);
-    await this.redis.set(`user:${newUser.id}`, sessionToken, dayToSec);
+    const sessionToken = randomBytes(32).toString('hex');
+    await Promise.all([
+      this.redis.set(redisKeys.session(sessionToken), user.id, DAY_IN_SEC),
+      this.redis.set(redisKeys.user(user.id), sessionToken, DAY_IN_SEC),
+    ]);
 
-    return {
-      sessionToken,
-      user: newUser,
-    };
+    return { sessionToken, user };
   }
 }
