@@ -36,11 +36,17 @@ export class RoomsService {
       .from(rooms)
       .leftJoin(users, eq(rooms.createdBy, users.id));
 
-    return result;
+    return Promise.all(
+      result.map(async (room) => ({
+        ...room,
+        activeUsers: (await this.redis.smembers(redisKeys.activeUsers(room.id)))
+          .length,
+      })),
+    );
   }
 
   async findRoomById(id: string) {
-    const result = await this.db
+    const room = await this.db
       .select({
         id: rooms.id,
         name: rooms.name,
@@ -50,9 +56,18 @@ export class RoomsService {
       .from(rooms)
       .leftJoin(users, eq(rooms.createdBy, users.id))
       .where(eq(rooms.id, id))
-      .limit(1);
+      .limit(1)
+      .then((res) => res[0] ?? null);
 
-    return result[0] ?? null;
+    if (room === null) {
+      return null;
+    }
+
+    return {
+      ...room,
+      activeUsers: (await this.redis.smembers(redisKeys.activeUsers(id)))
+        .length,
+    };
   }
 
   async createRoom(data: CreateRoomDto, createdBy: string) {
