@@ -11,6 +11,8 @@ import { rooms, users } from '../database/schema';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { AppException } from 'src/app-exception/app-exception';
 import { DatabaseError } from 'pg';
+import { RedisService } from 'src/redis/redis.service';
+import { redisKeys } from 'src/redis/redis.keys';
 
 const DUPLICATE_NAME_ERROR = '23505';
 const DUPLICATE_NAME_CODE = 'ROOM_NAME_TAKEN';
@@ -18,7 +20,10 @@ const ROOM_NOT_FOUND = 'ROOM_NOT_FOUND';
 
 @Injectable()
 export class RoomsService {
-  constructor(@Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
+    private readonly redis: RedisService,
+  ) {}
 
   async findAllRooms() {
     const result = await this.db
@@ -97,6 +102,11 @@ export class RoomsService {
     if (room.createdBy !== createdBy) {
       throw new ForbiddenException();
     }
+
+    await this.redis.publish(
+      redisKeys.channels.roomDeleted(id),
+      JSON.stringify({ roomId: id }),
+    );
 
     await this.db.delete(rooms).where(eq(rooms.id, id)).returning();
   }

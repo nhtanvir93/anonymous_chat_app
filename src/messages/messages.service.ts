@@ -6,13 +6,18 @@ import { messages, rooms, users } from '../database/schema';
 import { AppException } from 'src/app-exception/app-exception';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { RedisService } from 'src/redis/redis.service';
+import { redisKeys } from 'src/redis/redis.keys';
 
 const ROOM_NOT_FOUND = 'ROOM_NOT_FOUND';
 const MESSAGE_NOT_FOUND = 'MESSAGE_NOT_FOUND';
 
 @Injectable()
 export class MessagesService {
-  constructor(@Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
+    private readonly redis: RedisService,
+  ) {}
 
   async getMessages(roomId: string, query: GetMessagesDto) {
     const room = await this.db
@@ -49,8 +54,6 @@ export class MessagesService {
           `Cursor message with id ${before} does not exist`,
         );
       }
-
-      console.log(`Cursor : ${cursorMessage.createdAt.toString()}`);
 
       cursorCondition = lt(messages.createdAt, cursorMessage.createdAt);
     }
@@ -124,6 +127,11 @@ export class MessagesService {
       .where(eq(messages.id, inserted.id))
       .limit(1)
       .then((res) => res[0]);
+
+    await this.redis.publish(
+      redisKeys.channels.messageNew(roomId),
+      JSON.stringify(message),
+    );
 
     return message;
   }

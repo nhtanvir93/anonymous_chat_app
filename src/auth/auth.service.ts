@@ -63,4 +63,20 @@ export class AuthService {
 
     return { sessionToken, user };
   }
+
+  async validateSession(token: string) {
+    if (!token) return null;
+
+    const userId = await this.redis.get(redisKeys.session(token));
+    if (!userId) return null;
+
+    const user = await this.db
+      .select({ id: users.id, username: users.username })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+      .then((res) => res[0] ?? null);
+
+    return user;
+  }
 }
